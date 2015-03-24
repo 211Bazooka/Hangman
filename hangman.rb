@@ -1,25 +1,50 @@
+require 'yaml'
+
+def start_menu
+	puts "1. New Game\n2. Load Last Save"
+	input = gets.chomp
+	case input
+	when '1'
+		g = Game.new
+	when '2'
+		load = YAML.load_file('hangman_save.yaml')
+		g = Game.new(load)
+	end
+end
+
+class RandomWord
+	attr_reader :instance
+		def initialize
+			dictionary = File.open('5desk.txt', 'r').readlines.each{|word| word}
+			@instance = dictionary[rand(dictionary.size)].downcase.chomp
+		end
+end
 
 class Game
-		def initialize
-			@lives = 7
+	attr_accessor :solution, :lives, :guesses
+		def initialize(hash = {lives: 7, guesses: {}, solution: RandomWord.new.instance})
+			@lives = hash[:lives]
 			dictionary = File.open('5desk.txt', 'r').readlines.each{|word| word}
-			@random_word = dictionary[rand(dictionary.size)].downcase.chomp
-			@guesses = {}
+			@solution = hash[:solution]
+			@guesses = hash[:guesses]
+			@hash = hash
+			start
 		end
 
 		def show_board
-			puts "Guesses:   Lives: #{@lives}\n\r"
+			board
+			puts "Guesses:   Lives: #{@hash[:lives]}\n\r"
 			@guesses.each {|k, v| print "#{k} " if v == false}
 			puts "\n\r"
 			puts board
 		end
 
 		def board
-			@board = @random_word.split('').map! {|k| (@guesses[k] == true) ?  k :  "_"}.join('  ')
+			@board = @solution.split('').map! {|k| (@guesses[k] == true) ?  k :  "_"}.join('  ')
 		end
 
 		def answer
-			@answer = @random_word.split('').map! {|k| (@guesses[k] == true) ?  k :  "_"}.join
+			@answer = @solution.split('').map! {|k| (@guesses[k] == true) ?  k :  "_"}.join
 		end
 
 		def guess
@@ -32,16 +57,20 @@ class Game
 				unique_letter = ((@guesses.include? (@input)) == false)
 				case
 					when @input == "save"
+						save = YAML::dump(@hash)
+						save_file = File.new('hangman_save.yaml', 'w+')
+						save_file.write(save)
 						puts "Game Saved!"
-						puts "Choose a Letter"
+						puts "Choose a Letter:"
+
 					when @input == "exit"
 						exit
 
 					when (valid_letter && unique_letter && @input.size == 1)
-						if @random_word.split('').include? (@input)
+						if @solution.split('').include? (@input)
 							then @guesses[@input] = true
 						else @guesses[@input] = false
-							@lives -= 1
+							@hash[:lives] -= 1
 						end
 						board
 						show_board
@@ -59,12 +88,12 @@ class Game
 			show_board
 			loop do
 				answer
-					if @answer == @random_word
+					if @answer == @solution
 						puts "You Win!"
 						exit
-					elsif @lives <= 0
+					elsif @hash[:lives] <= 0
 						puts "Game Over"
-						puts "The Answer was #{@random_word}"
+						puts "The Answer was #{@solution}"
 						exit
 					else guess
 				end
@@ -72,6 +101,5 @@ class Game
 		end
 end
 
-g = Game.new
-g.start
+start_menu
 

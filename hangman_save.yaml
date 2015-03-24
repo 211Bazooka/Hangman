@@ -1,0 +1,9 @@
+---
+:lives: 4
+:guesses:
+  a: true
+  l: false
+  o: false
+  e: true
+  i: false
+:solution: chanter
